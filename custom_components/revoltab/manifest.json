@@ -1,7 +1,7 @@
 {
   "domain": "revoltab",
   "name": "Revoltab Diffusor",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "documentation": "https://github.com/ListeWeraf/revoltab-hass",
   "requirements": [],
   "codeowners": ["@ListeWeraf"],
