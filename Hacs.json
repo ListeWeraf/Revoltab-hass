@@ -1,0 +1,6 @@
+{
+  "name": "Revoltab Diffusor",
+  "render_readme": true,
+  "homeassistant": "2023.8.0",
+  "domains": ["revoltab"]
+}
