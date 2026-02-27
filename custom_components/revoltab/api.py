@@ -1,5 +1,9 @@
 import aiohttp
-import asyncio
+import logging
+
+from .const import AUTH_BASE, API_BASE
+
+_LOGGER = logging.getLogger(__name__)
 
 class RevoltabAPI:
     def __init__(self, email, password):
@@ -21,22 +25,42 @@ class RevoltabAPI:
         }
 
         async with self._session.post(url, data=data) as resp:
+            text = await resp.text()
+
+            if resp.status != 200:
+                _LOGGER.error("Login failed: %s", text)
+                raise Exception(f"Login failed: {resp.status}")
+
             result = await resp.json()
-            self._token = result["access_token"]
+            self._token = result.get("access_token")
+
+            if not self._token:
+                raise Exception("No access token received")
 
     async def discover_device(self):
-        url = f"{API_BASE}/accounts"
-
         headers = {"Authorization": f"Bearer {self._token}"}
 
+        url = f"{API_BASE}/accounts"
         async with self._session.get(url, headers=headers) as resp:
+            if resp.status != 200:
+                raise Exception("Failed to fetch accounts")
+
             accounts = await resp.json()
+
+        if not accounts:
+            raise Exception("No accounts found")
 
         self._account_id = accounts[0]["accountId"]
 
         url = f"{API_BASE}/accounts/{self._account_id}/devices"
         async with self._session.get(url, headers=headers) as resp:
+            if resp.status != 200:
+                raise Exception("Failed to fetch devices")
+
             devices = await resp.json()
+
+        if not devices:
+            raise Exception("No devices found")
 
         self._device_id = devices[0]["deviceId"]
 
@@ -45,12 +69,12 @@ class RevoltabAPI:
         await self.discover_device()
 
     async def send(self, attr_id, value):
-        url = f"{API_BASE}/accounts/{self._account_id}/devices/{self._device_id}/requests"
-
         headers = {
             "Authorization": f"Bearer {self._token}",
             "Content-Type": "application/json",
         }
+
+        url = f"{API_BASE}/accounts/{self._account_id}/devices/{self._device_id}/requests"
 
         payload = [{
             "type": "attribute_write",
@@ -62,3 +86,7 @@ class RevoltabAPI:
             if resp.status == 401:
                 await self.login()
                 return await self.send(attr_id, value)
+
+            if resp.status != 200:
+                text = await resp.text()
+                _LOGGER.error("Command failed: %s", text)
