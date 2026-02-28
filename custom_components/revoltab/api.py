@@ -1,92 +1,99 @@
 import aiohttp
-import logging
+import asyncio
+from urllib.parse import urlencode, urlparse, parse_qs
 
-from .const import AUTH_BASE, API_BASE
+BASE_URL = "https://auth1.o80y8sax.afero.net"
+REALM = "rvt"
+CLIENT_ID = "rvt_ios"
+REDIRECT_URI = "rvt://auth"
 
-_LOGGER = logging.getLogger(__name__)
-
-class RevoltabAPI:
-    def __init__(self, email, password):
-        self._email = email
-        self._password = password
-        self._token = None
-        self._account_id = None
-        self._device_id = None
-        self._session = aiohttp.ClientSession()
+class RevoltabAuth:
+    def __init__(self, username, password):
+        self.username = username
+        self.password = password
+        self.session = aiohttp.ClientSession(cookie_jar=aiohttp.CookieJar())
+        self.access_token = None
+        self.refresh_token = None
 
     async def login(self):
-        url = f"{AUTH_BASE}/auth/realms/rvt/protocol/openid-connect/token"
-
-        data = {
-            "grant_type": "password",
-            "client_id": "rvt_ios",
-            "username": self._email,
-            "password": self._password,
+        # 1️⃣ Authorization Request
+        params = {
+            "client_id": CLIENT_ID,
+            "response_type": "code",
+            "scope": "openid",
+            "redirect_uri": REDIRECT_URI,
         }
 
-        async with self._session.post(url, data=data) as resp:
+        auth_url = f"{BASE_URL}/auth/realms/{REALM}/protocol/openid-connect/auth?{urlencode(params)}"
+
+        async with self.session.get(auth_url, allow_redirects=True) as resp:
             text = await resp.text()
 
-            if resp.status != 200:
-                _LOGGER.error("Login failed: %s", text)
-                raise Exception(f"Login failed: {resp.status}")
+        # 2️⃣ Extract login action URL
+        login_action = str(resp.url)
 
-            result = await resp.json()
-            self._token = result.get("access_token")
-
-            if not self._token:
-                raise Exception("No access token received")
-
-    async def discover_device(self):
-        headers = {"Authorization": f"Bearer {self._token}"}
-
-        url = f"{API_BASE}/accounts"
-        async with self._session.get(url, headers=headers) as resp:
-            if resp.status != 200:
-                raise Exception("Failed to fetch accounts")
-
-            accounts = await resp.json()
-
-        if not accounts:
-            raise Exception("No accounts found")
-
-        self._account_id = accounts[0]["accountId"]
-
-        url = f"{API_BASE}/accounts/{self._account_id}/devices"
-        async with self._session.get(url, headers=headers) as resp:
-            if resp.status != 200:
-                raise Exception("Failed to fetch devices")
-
-            devices = await resp.json()
-
-        if not devices:
-            raise Exception("No devices found")
-
-        self._device_id = devices[0]["deviceId"]
-
-    async def async_setup(self):
-        await self.login()
-        await self.discover_device()
-
-    async def send(self, attr_id, value):
-        headers = {
-            "Authorization": f"Bearer {self._token}",
-            "Content-Type": "application/json",
+        # 3️⃣ Submit credentials
+        payload = {
+            "username": self.username,
+            "password": self.password,
+            "credentialId": ""
         }
 
-        url = f"{API_BASE}/accounts/{self._account_id}/devices/{self._device_id}/requests"
+        async with self.session.post(login_action, data=payload, allow_redirects=False) as resp:
+            location = resp.headers.get("Location")
 
-        payload = [{
-            "type": "attribute_write",
-            "attrId": attr_id,
-            "value": str(value),
-        }]
+        if not location:
+            raise Exception("Login failed – no redirect received")
 
-        async with self._session.post(url, json=payload, headers=headers) as resp:
-            if resp.status == 401:
-                await self.login()
-                return await self.send(attr_id, value)
+        # 4️⃣ Extract authorization code
+        parsed = urlparse(location)
+        query = parse_qs(parsed.query)
 
-            if resp.status != 200:
-                text = await resp.text()
-                _LOGGER.error("Command failed: %s", text)
+        if "code" not in query:
+            raise Exception("Authorization code not found")
+
+        code = query["code"][0]
+
+        # 5️⃣ Exchange code for tokens
+        token_url = f"{BASE_URL}/auth/realms/{REALM}/protocol/openid-connect/token"
+
+        token_data = {
+            "grant_type": "authorization_code",
+            "code": code,
+            "client_id": CLIENT_ID,
+            "redirect_uri": REDIRECT_URI,
+        }
+
+        async with self.session.post(token_url, data=token_data) as resp:
+            token_json = await resp.json()
+
+        if "access_token" not in token_json:
+            raise Exception(f"Token exchange failed: {token_json}")
+
+        self.access_token = token_json["access_token"]
+        self.refresh_token = token_json["refresh_token"]
+
+        return True
+
+    async def refresh(self):
+        token_url = f"{BASE_URL}/auth/realms/{REALM}/protocol/openid-connect/token"
+
+        data = {
+            "grant_type": "refresh_token",
+            "refresh_token": self.refresh_token,
+            "client_id": CLIENT_ID,
+        }
+
+        async with self.session.post(token_url, data=data) as resp:
+            token_json = await resp.json()
+
+        if "access_token" not in token_json:
+            raise Exception("Refresh failed")
+
+        self.access_token = token_json["access_token"]
+        self.refresh_token = token_json["refresh_token"]
+
+        return True
+
+    async def close(self):
+        await self.session.close()
