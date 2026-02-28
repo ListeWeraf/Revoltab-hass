@@ -1,21 +1,48 @@
-from .const import DOMAIN
-from .api import RevoltabAPI
-from .coordinator import RevoltabCoordinator
+"""Revoltab Integration for Home Assistant."""
 
-PLATFORMS = ["switch", "fan"]
+import logging
 
-async def async_setup_entry(hass, entry):
-    api = RevoltabAPI(
-        entry.data["email"],
-        entry.data["password"]
-    )
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.core import HomeAssistant
 
-    await api.async_setup()
+from .api import RevoltabAuth
 
-    coordinator = RevoltabCoordinator(hass, api)
+DOMAIN = "revoltab"
 
+_LOGGER = logging.getLogger(__name__)
+
+
+async def async_setup(hass: HomeAssistant, config: dict):
+    """Set up the Revoltab component."""
+    return True
+
+
+async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
+    """Set up Revoltab from a config entry."""
+    username = entry.data["username"]
+    password = entry.data["password"]
+
+    auth = RevoltabAuth(username, password)
+
+    try:
+        await auth.login()
+    except Exception as e:
+        _LOGGER.error("Login failed: %s", e)
+        return False
+
+    # Speichern der Auth-Instanz
     hass.data.setdefault(DOMAIN, {})
-    hass.data[DOMAIN][entry.entry_id] = coordinator
+    hass.data[DOMAIN][entry.entry_id] = auth
 
-    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+    _LOGGER.info("Revoltab login successful")
+
+    return True
+
+
+async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry):
+    """Unload a config entry."""
+    auth = hass.data[DOMAIN].pop(entry.entry_id)
+
+    await auth.close()
+
     return True
