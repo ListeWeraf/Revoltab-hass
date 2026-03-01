@@ -1,10 +1,23 @@
+import base64
+import hashlib
+import os
 from urllib.parse import urlencode, urlparse, parse_qs
+
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 BASE_URL = "https://auth1.o80y8sax.afero.net"
 REALM = "rvt"
 CLIENT_ID = "rvt_ios"
 REDIRECT_URI = "rvt://auth"
+
+
+def generate_pkce():
+    code_verifier = base64.urlsafe_b64encode(os.urandom(40)).decode().rstrip("=")
+
+    sha256 = hashlib.sha256(code_verifier.encode()).digest()
+    code_challenge = base64.urlsafe_b64encode(sha256).decode().rstrip("=")
+
+    return code_verifier, code_challenge
 
 
 class RevoltabAuth:
@@ -17,11 +30,15 @@ class RevoltabAuth:
         self.refresh_token = None
 
     async def login(self):
+        code_verifier, code_challenge = generate_pkce()
+
         params = {
             "client_id": CLIENT_ID,
             "response_type": "code",
             "scope": "openid",
             "redirect_uri": REDIRECT_URI,
+            "code_challenge": code_challenge,
+            "code_challenge_method": "S256",
         }
 
         auth_url = (
@@ -63,6 +80,7 @@ class RevoltabAuth:
             "code": code,
             "client_id": CLIENT_ID,
             "redirect_uri": REDIRECT_URI,
+            "code_verifier": code_verifier,
         }
 
         async with self.session.post(token_url, data=token_data) as resp:
