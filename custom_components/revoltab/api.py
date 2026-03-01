@@ -1,4 +1,3 @@
-import aiohttp
 from urllib.parse import urlencode, urlparse, parse_qs
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
@@ -31,9 +30,7 @@ class RevoltabAuth:
         )
 
         async with self.session.get(auth_url, allow_redirects=True) as resp:
-            pass
-
-        login_action = str(resp.url)
+            login_action = str(resp.url)
 
         payload = {
             "username": self.username,
