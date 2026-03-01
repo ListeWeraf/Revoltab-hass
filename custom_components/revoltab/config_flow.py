@@ -1,6 +1,5 @@
 import voluptuous as vol
 from homeassistant import config_entries
-from homeassistant.exceptions import HomeAssistantError
 
 from .const import DOMAIN, CONF_EMAIL, CONF_PASSWORD
 from .api import RevoltabAuth
@@ -13,14 +12,13 @@ class RevoltabConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         errors = {}
 
         if user_input is not None:
-            try:
-                auth = RevoltabAuth(
-                    user_input[CONF_EMAIL],
-                    user_input[CONF_PASSWORD],
-                )
+            auth = RevoltabAuth(
+                user_input[CONF_EMAIL],
+                user_input[CONF_PASSWORD],
+            )
 
+            try:
                 await auth.login()
-                await auth.close()
 
                 return self.async_create_entry(
                     title="Revoltab",
@@ -29,6 +27,10 @@ class RevoltabConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
             except Exception:
                 errors["base"] = "cannot_connect"
+
+            finally:
+                # 🔥 GANZ WICHTIG
+                await auth.close()
 
         schema = vol.Schema(
             {
