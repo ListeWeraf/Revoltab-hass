@@ -22,7 +22,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
     username = entry.data["username"]
     password = entry.data["password"]
 
-    auth = RevoltabAuth(username, password)
+    auth = RevoltabAuth(hass, username, password)
 
     try:
         await auth.login()
@@ -43,6 +43,5 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry):
     """Unload a config entry."""
     auth = hass.data[DOMAIN].pop(entry.entry_id)
 
-    await auth.close()
 
     return True
