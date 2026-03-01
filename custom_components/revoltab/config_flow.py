@@ -13,9 +13,11 @@ class RevoltabConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         if user_input is not None:
             auth = RevoltabAuth(
+            self.hass,
                 user_input[CONF_EMAIL],
                 user_input[CONF_PASSWORD],
             )
+
 
             try:
                 await auth.login()
@@ -30,7 +32,7 @@ class RevoltabConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
             finally:
                 # 🔥 GANZ WICHTIG
-                await auth.close()
+            
 
         schema = vol.Schema(
             {
