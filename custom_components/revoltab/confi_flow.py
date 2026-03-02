@@ -11,7 +11,7 @@ class RevoltabOAuth2Implementation(
 
     def __init__(self, hass):
         super().__init__(
-            hass,
+                    hass,
             DOMAIN,
             CLIENT_ID,
             None,
