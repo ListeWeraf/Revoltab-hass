@@ -1,3 +1,4 @@
+from homeassistant import config_entries
 from homeassistant.helpers import config_entry_oauth2_flow
 
 from .const import DOMAIN, OAUTH2_AUTHORIZE, OAUTH2_TOKEN, CLIENT_ID, SCOPES
@@ -26,6 +27,7 @@ class RevoltabConfigFlow(
     """Config flow for Revoltab."""
 
     DOMAIN = DOMAIN
+    CONNECTION_CLASS = config_entries.CONN_CLASS_CLOUD_POLL
 
     async def async_oauth_create_entry(self, data):
         """Create entry after OAuth."""
