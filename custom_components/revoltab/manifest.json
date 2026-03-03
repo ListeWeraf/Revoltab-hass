@@ -1,14 +1,8 @@
 {
   "domain": "revoltab",
   "name": "Revoltab",
-  "version": "1.4.0",
+  "version": "2.0.0",
   "config_flow": true,
   "iot_class": "cloud_polling",
-  "requirements": [],
-  "oauth2": {
-    "client_id": "rvt_ios",
-    "authorize_url": "https://auth1.o80y8sax.afero.net/auth/realms/rvt/protocol/openid-connect/auth",
-    "token_url": "https://auth1.o80y8sax.afero.net/auth/realms/rvt/protocol/openid-connect/token",
-    "scopes": ["openid"]
-  }
+  "requirements": []
 }
