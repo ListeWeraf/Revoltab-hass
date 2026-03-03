@@ -1,35 +1,15 @@
-from homeassistant import config_entries
 from homeassistant.helpers import config_entry_oauth2_flow
 
-from .const import DOMAIN, OAUTH2_AUTHORIZE, OAUTH2_TOKEN, CLIENT_ID, SCOPES
+from .const import DOMAIN
 
 
-class RevoltabOAuth2Implementation(
-    config_entry_oauth2_flow.LocalOAuth2Implementation
-):
-    """OAuth2 implementation."""
+class ConfigFlow(config_entry_oauth2_flow.AbstractOAuth2FlowHandler):
+    """Handle OAuth2 flow for Revoltab."""
 
-    def __init__(self, hass):
-        super().__init__(
-            hass,
-            DOMAIN,
-            CLIENT_ID,
-            None,
-            OAUTH2_AUTHORIZE,
-            OAUTH2_TOKEN,
-            SCOPES,
-        )
+    DOMAIN = DOMAIN
 
-
-class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
-    VERSION = 1
-
-    async def async_step_user(self, user_input=None):
-        implementation = RevoltabOAuth2Implementation(self.hass)
-
-        return await config_entry_oauth2_flow.async_init(
-            self.hass,
-            DOMAIN,
-            context={"source": self.source},
-            implementation=implementation,
+    async def async_oauth_create_entry(self, data):
+        return self.async_create_entry(
+            title="Revoltab",
+            data=data,
         )
