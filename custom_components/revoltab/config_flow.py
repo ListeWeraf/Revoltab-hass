@@ -5,9 +5,8 @@ from .const import DOMAIN
 from .oauth import RevoltabOAuth
 
 
-class ConfigFlow(config_entries.ConfigFlow):
+class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     VERSION = 1
-    DOMAIN = DOMAIN
 
     async def async_step_user(self, user_input=None):
         errors = {}
