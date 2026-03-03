@@ -1,15 +1,13 @@
-from homeassistant.helpers import config_entry_oauth2_flow
+from homeassistant import config_entries
 
 from .const import DOMAIN
 
 
-class ConfigFlow(config_entry_oauth2_flow.AbstractOAuth2FlowHandler):
-    """Handle OAuth2 flow for Revoltab."""
+class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
+    VERSION = 1
 
-    DOMAIN = DOMAIN
-
-    async def async_oauth_create_entry(self, data):
+    async def async_step_user(self, user_input=None):
         return self.async_create_entry(
             title="Revoltab",
-            data=data,
+            data={},
         )
