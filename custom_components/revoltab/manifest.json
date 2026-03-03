@@ -1,7 +1,7 @@
 {
   "domain": "revoltab",
   "name": "Revoltab",
-  "version": "2.1.1",
+  "version": "2.1.2",
   "config_flow": true,
   "iot_class": "cloud_polling",
   "requirements": []
