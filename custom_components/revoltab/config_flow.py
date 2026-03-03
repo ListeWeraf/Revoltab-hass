@@ -1,9 +1,7 @@
-raise Exception("CONFIG_FLOW LOADED")
 import voluptuous as vol
 from homeassistant import config_entries
 
 from .const import DOMAIN
-from .oauth import RevoltabOAuth
 
 
 class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
@@ -14,6 +12,9 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         if user_input is not None:
             try:
+                # Import HIER, nicht oben!
+                from .oauth import RevoltabOAuth
+
                 oauth = RevoltabOAuth(self.hass)
                 tokens = await oauth.login(
                     user_input["email"],
