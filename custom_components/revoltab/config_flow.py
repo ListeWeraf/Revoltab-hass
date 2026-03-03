@@ -1,3 +1,4 @@
+raise Exception("CONFIG_FLOW LOADED")
 import voluptuous as vol
 from homeassistant import config_entries
 
