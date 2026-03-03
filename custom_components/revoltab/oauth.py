@@ -19,6 +19,28 @@ def generate_pkce():
 
 
 class RevoltabOAuth:
+    
+        async def refresh(self, refresh_token):
+        token_url = f"{BASE_URL}/auth/realms/{REALM}/protocol/openid-connect/token"
+
+        token_data = {
+            "grant_type": "refresh_token",
+            "client_id": CLIENT_ID,
+            "refresh_token": refresh_token,
+        }
+
+        async with aiohttp.ClientSession() as session:
+            async with session.post(token_url, data=token_data) as resp:
+                token_json = await resp.json()
+
+        if "access_token" not in token_json:
+            raise Exception("Token refresh failed")
+
+        return {
+            "access_token": token_json["access_token"],
+            "refresh_token": token_json.get("refresh_token", refresh_token),
+            "expires_in": token_json["expires_in"],
+        }
 
     def __init__(self, hass):
         self.hass = hass
