@@ -6,16 +6,14 @@ from .const import DOMAIN
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
-    """Set up Revoltab from a config entry."""
-
-    implementation = await config_entry_oauth2_flow.async_get_implementation(
-        hass, DOMAIN
-    )
+    """Set up Revoltab."""
 
     session = config_entry_oauth2_flow.OAuth2Session(
         hass,
         entry,
-        implementation,
+        config_entry_oauth2_flow.async_get_config_entry_implementation(
+            hass, entry
+        ),
     )
 
     hass.data.setdefault(DOMAIN, {})
