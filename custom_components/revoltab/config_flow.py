@@ -1,6 +1,5 @@
 import voluptuous as vol
 from homeassistant import config_entries
-from homeassistant.exceptions import HomeAssistantError
 
 from .const import DOMAIN
 from .oauth import RevoltabOAuth
@@ -25,7 +24,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     data=tokens,
                 )
 
-            except Exception as e:
+            except Exception:
                 errors["base"] = "auth_failed"
 
         return self.async_show_form(
